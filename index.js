@@ -109,6 +109,21 @@ function HttpGarageDoorControllerAccessory(log, config) {
 		}
 	}
 
+	this.digestAuthentication = getConfigValue(config, "digestAuthentication", false);
+	if (this.digestAuthentication) {
+		this.digestAuthenticationUsername = getConfigValue(config, "digestAuthenticationUsername", null);
+		if (!this.digestAuthenticationUsername) {
+			this.log.error("ERROR - Missing or invalid configuration field 'digestAuthenticationUsername' when 'digestAuthentication' is enabled");
+			configurationValid = false;
+		}
+
+		this.digestAuthenticationPassword = getConfigValue(config, "digestAuthenticationPassword", null);
+		if (!this.digestAuthenticationPassword) {
+			this.log.error("ERROR - Missing or invalid configuration field 'digestAuthenticationPassword' when 'digestAuthentication' is enabled");
+			configurationValid = false;
+		}
+	}
+
 	this.oauthAuthentication = getConfigValue(config, "oauthAuthentication", false);
 	if (this.oauthAuthentication) {
 		this.oauthSignatureMethod = getConfigValue(config, "oauthSignatureMethod", "HMAC-SHA1");
@@ -138,6 +153,11 @@ function HttpGarageDoorControllerAccessory(log, config) {
 				configurationValid = false;
 			}
 		}
+	}
+
+	if (this.oauthAuthentication && this.digestAuthentication) {
+		this.log.error("ERROR - Both oauthAuthentication and digestAuthentication are set.");
+		configurationValid = false;
 	}
 
 	// Read and validate API configuration
@@ -779,6 +799,14 @@ HttpGarageDoorControllerAccessory.prototype = {
 				timeout: this.httpRequestTimeoutMilliseconds,
 				url: url
 			};
+
+			if (this.digestAuthentication) {
+				options.auth = {
+					'user': this.digestAuthenticationUsername,
+					'pass': this.digestAuthenticationPassword,
+					'sendImmediately': false
+				};
+			}
 
 			if (this.httpHeaderName) {
 				var headers = {};
